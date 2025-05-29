@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Button,
-  FlatList,
-  TextInput,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, Button, FlatList, TextInput, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { startScan } from './bluetooth/BluetoothManager';
 import { Device } from 'react-native-ble-plx';
@@ -15,6 +8,7 @@ type DeviceInfo = {
   id: string;
   name: string;
   lastSeen: number;
+  rssi: number;
 };
 
 export default function App() {
@@ -46,6 +40,7 @@ export default function App() {
         id: device.id,
         name: device.name || 'Unnamed Device',
         lastSeen: Date.now(),
+        rssi: device.rssi ?? 0,
       },
     }));
   };
@@ -77,7 +72,7 @@ export default function App() {
           const timeText = minutesAgo === 0 ? 'just now' : `${minutesAgo} min ago`;
           return (
             <Text style={styles.deviceItem}>
-              {item.name} ({item.id}) — last seen {timeText}
+              {item.name} ({item.id}) — RSSI: {item.rssi} — last seen {timeText}
             </Text>
           );
         }}
