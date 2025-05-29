@@ -3,7 +3,18 @@ import { PermissionsAndroid, Platform } from 'react-native';
 
 const manager = new BleManager();
 
-export async function startScan(onDeviceFound: (device: Device) => void) {
+export function estimateDistance(rssi: number, txPower = -59): number {
+  if (rssi === 0) return -1.0;
+
+  const ratio = rssi / txPower;
+  if (ratio < 1.0) {
+    return parseFloat((Math.pow(ratio, 10)).toFixed(2));
+  } else {
+    return parseFloat((0.89976 * Math.pow(ratio, 7.7095) + 0.111).toFixed(2));
+  }
+}
+
+export async function startScan(onDeviceFound: (device: Device, distance: number) => void) {
   if (Platform.OS === 'android') {
     await PermissionsAndroid.requestMultiple([
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -18,8 +29,9 @@ export async function startScan(onDeviceFound: (device: Device) => void) {
       return;
     }
 
-    if (device?.name) {
-      onDeviceFound(device);
+    if (device?.name && device.rssi !== null) {
+      const distance = estimateDistance(device.rssi);
+      onDeviceFound(device, distance);
     }
   });
 }

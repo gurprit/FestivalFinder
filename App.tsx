@@ -4,12 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { startScan } from './bluetooth/BluetoothManager';
 import { Device } from 'react-native-ble-plx';
 
-type DeviceInfo = {
+interface DeviceInfo {
   id: string;
   name: string;
   lastSeen: number;
   rssi: number;
-};
+  distance: number;
+}
 
 export default function App() {
   const [nickname, setNickname] = useState('');
@@ -32,7 +33,7 @@ export default function App() {
     setNickname(input);
   };
 
-  const handleDeviceFound = (device: Device) => {
+  const handleDeviceFound = (device: Device, distance: number) => {
     if (!device.id) return;
     setDevices((prev) => ({
       ...prev,
@@ -41,9 +42,14 @@ export default function App() {
         name: device.name || 'Unnamed Device',
         lastSeen: Date.now(),
         rssi: device.rssi ?? 0,
+        distance,
       },
     }));
   };
+
+  const sortedDevices = Object.values(devices)
+    .filter((d) => d.name)
+    .sort((a, b) => b.rssi - a.rssi);
 
   return (
     <View style={styles.container}>
@@ -58,21 +64,19 @@ export default function App() {
       />
       <Button title="Save Nickname" onPress={saveNickname} />
 
-      {nickname ? (
-        <Text style={styles.nickname}>👋 Hello, {nickname}!</Text>
-      ) : null}
+      {nickname ? <Text style={styles.nickname}>👋 Hello, {nickname}!</Text> : null}
 
       <Button title="Start Scanning" onPress={() => startScan(handleDeviceFound)} />
 
       <FlatList
-        data={Object.values(devices)}
+        data={sortedDevices}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const minutesAgo = Math.floor((Date.now() - item.lastSeen) / 60000);
           const timeText = minutesAgo === 0 ? 'just now' : `${minutesAgo} min ago`;
           return (
             <Text style={styles.deviceItem}>
-              {item.name} ({item.id}) — RSSI: {item.rssi} — last seen {timeText}
+              {item.name} ({item.id}) — RSSI {item.rssi} dBm, est. {item.distance} m, last seen {timeText}
             </Text>
           );
         }}
